@@ -1,68 +1,100 @@
-\documentclass[11pt,a4paper]{article}
+\documentclass[12pt]{article}
 
+% Use Times New Roman font
+\usepackage{mathptmx}
+\usepackage[T1]{fontenc}
 \usepackage[utf8]{inputenc}
-\usepackage[english]{babel}
-\usepackage{amsmath,amssymb}
-\usepackage{hyperref}
-\usepackage{geometry}
-\geometry{margin=2.5cm}
 
-\title{Analysis of \textit{Gaze-LLE: Gaze Target Estimation via Large-Scale Learned Encoders}}
-\author{Pablo Tuñón Laguna}
-\date{}
+\usepackage{geometry}
+\geometry{a4paper, margin=1in}
+
+\usepackage{setspace}
+\onehalfspacing
+
+\title{\vspace{-3cm}\textbf{Gaze-LLE Analysis - Pablo Tuñón Laguna}\vspace{-2cm}}
+
 
 \begin{document}
+\date{}
 
 \maketitle
 
-\section*{Overview}
+\subsection*{Summary of the paper}
 
-The paper \textit{Gaze-LLE} addresses gaze target estimation: predicting where a person is looking given an RGB frame and face bounding box. The key contribution demonstrates that a frozen general-purpose visual encoder (DINOv2 ViT) contains sufficient scene, pose, and depth information to solve the task using only a lightweight decoder. With $\sim$2.8M trainable parameters, the model achieves state-of-the-art on GazeFollow, VideoAttentionTarget, ChildPlay, and GOO-Real benchmarks.
+In December 2024, a team of researchers from Georgia Tech, Sungkyunkwan University and UIUC, with Fiona Ryan as first author, published \textit{"Gaze-LLE: Gaze Target Estimation via Large-Scale Learned Encoders"}. This paper presented an architecture for gaze target estimation,
+the task of predicting where a person in an image is looking, based on the idea that a frozen general-purpose visual encoder already contains the information that the task needs.
 
-\section{Scientific Gap and Hypothesis}
+\vspace{0.5cm}
 
-Previous gaze target methods used multi-branch architectures with separate encoders for head and scene, plus auxiliary models for depth and pose. These systems required tens of millions of parameters and careful fusion of heterogeneous representations. This work demonstrates that self-supervised foundation models can achieve SOTA without massive finetuning or complex multi-branch designs.
+The architecture that received the \textit{"Gaze-LLE"} name was designed to replace the multi-branch pipelines of previous methods with a single frozen encoder and a small learned decoder.
+The main idea is to encode the scene once and then tell the decoder which person to follow:
+\begin{itemize}
+    \item Instead of training separate encoders for the scene and for a crop of the head, and adding auxiliary models for depth or pose, Gaze-LLE extracts one representation of the scene with a frozen DINOv2 ViT.
+    \item The person whose gaze is predicted is marked with a learned head prompt that is added to the scene tokens after the encoder, and a light transformer decoder turns those tokens into a gaze heatmap.
+\end{itemize}
 
-The central hypothesis: large-scale self-supervised encoders (DINOv2) already encode sufficient semantic and geometric information, requiring only a lightweight learned decoder.
+\vspace{0.5cm}
 
-\section{Methodology}
+The final model trains only 2.8M parameters with a ViT-B backbone (2.9M with ViT-L), between 1 and 2 orders of magnitude fewer than previous methods, and reached state-of-the-art results on four benchmarks: GazeFollow, VideoAttentionTarget, ChildPlay and GOO-Real.
 
-The architecture processes frame $x_{\text{img}}$ and head bounding box $x_{\text{bbox}}$ through:
+\vspace{0.5cm}
 
-\begin{enumerate}
-    \item \textbf{Frozen encoder.} DINOv2 ViT extracts features $x_{\mathcal{F}} \in \mathbb{R}^{d_{\text{model}} \times H \times W}$.
-    \item \textbf{Head prompting.} A learned embedding $p_{\text{head}}$ is added to tokens within the head box: $S = x_{\mathcal{F}} + (M \cdot p_{\text{head}})$.
-    \item \textbf{Gaze decoder.} Three transformer layers process tokens with global self-attention.
-    \item \textbf{Output.} Convolutions upsample to produce a gaze heatmap; an MLP classifies in/out-of-frame targets.
-\end{enumerate}
+\subsection*{Scientific gap}
 
-Training uses binary cross-entropy on target heatmaps (2D Gaussians) and, when applicable, classification loss for in/out-of-frame prediction. Only the decoder and prompt are trained.
+Before Gaze-LLE, gaze target estimation relied on multi-branch pipelines: a scene encoder, a separate encoder for the head, and often auxiliary models for depth or pose, joined with hand-designed fusion mechanisms and multi-task losses.
+These models trained between roughly 25M and 105M parameters, and since the head was given as an input to the scene branch, the scene had to be encoded again for each person.
+Simply swapping their scene encoder for DINOv2 did not work either: in three open-source methods the stronger encoder performed worse than the original ResNet backbones, whether it was finetuned or not.
 
-\section{Key Design Decisions}
+\vspace{0.5cm}
 
-The work analyzes three critical axes:
-\begin{enumerate}
-    \item Injecting head prompts \emph{after} the encoder preserves pretrained features better than finetuning.
-    \item Transformer decoders capture long-range relationships, significantly outperforming conv-only designs.
-    \item A dedicated head branch is unnecessary, since pose information is implicit in DINOv2 tokens.
-\end{enumerate}
+The gap was therefore not the lack of a better backbone, but of a design that can use a frozen foundation model properly. The hypothesis was that large self-supervised encoders such as DINOv2 already capture the scene, head pose and depth cues that the task needs,
+so only a lightweight decoder has to be learned.
 
-\section{Advances}
+\vspace{0.5cm}
 
-\textbf{Conceptual:} Positions gaze estimation within the foundation models paradigm, shifting focus from multi-branch fusion to proper adaptation of generic representations.
+\subsection*{Methodology}
 
-\textbf{Methodological:} Introduces a generic gaze decoder compatible with various pretrained ViTs, head prompting mechanism, and systematic ablation protocol.
+The Gaze-LLE methodology was based on keeping the encoder frozen and learning a small gaze decoder on top of its features. The input is the frame \(x_{img}\) and the head bounding box \(x_{bbox}\), which go through four steps:
+\begin{itemize}
+    \item Frozen encoder: a DINOv2 ViT (Base or Large) encodes a 448×448 image into a 32×32 grid of tokens, which a linear layer projects to \(d_{model} = 256\).
+    \item Head prompting: the head bounding box is downsampled into a binary mask \(M\) over that grid, and a learned embedding \(p_{head}\) is added to the tokens inside it, so the scene features become \(S = x_{\mathcal{F}} + M \cdot p_{head}\).
+    \item Gaze decoder: 3 transformer layers with 8 attention heads apply self-attention over all the tokens. For the datasets that also ask whether the target is inside the frame, a learnable in/out token is added to the token list.
+    \item Output: 2 convolutional layers upsample the scene tokens to a 64×64 gaze heatmap, and a 2-layer MLP on the in/out token predicts whether the target is in or out of frame.
+\end{itemize}
 
-\textbf{Computational:} Reduces trainable parameters from 30-100M to 2.8M, enables training in $<$1.5 hours on RTX 4090, and achieves $>$50 fps inference.
+\vspace{0.5cm}
 
-\textbf{Empirical:} Achieves SOTA on all benchmarks (AUC $\approx 0.958$ on GazeFollow) using only RGB, without explicit depth or pose. Strong cross-dataset generalization demonstrates minimal over-specialization.
+Training uses pixel-wise binary cross-entropy against a target heatmap built by placing a 2D Gaussian on each annotated gaze point, plus a binary cross-entropy term for the in/out prediction when the dataset has it (\(\mathcal{L} = \mathcal{L}_{hm} + \lambda \mathcal{L}_{in/out}\)).
+The DINOv2 backbone stays frozen, so only the decoder and the head embedding are learned. On GazeFollow the model is trained for 15 epochs with Adam, a cosine schedule that starts at a learning rate of 1e-3 and batches of 60 images.
 
-\section{Explainability}
+\vspace{0.5cm}
 
-The model provides interpretable gaze heatmaps for error analysis. Ablations without head prompts show DINOv2 encodes implicit head detections, with prompts acting as disambiguation in multi-person scenes.
+The design was justified with an ablation along three axes on GazeFollow (Table 2 of the paper), starting from a baseline that concatenates frozen DINOv2 features of the scene and of the head:
+\begin{itemize}
+    \item Adding the head position after the encoder, instead of feeding it into the scene branch as prior work does, raised the AUC from 0.854 to 0.932 with a convolutional decoder and from 0.904 to 0.954 with a transformer decoder.
+    \item With the same number of parameters, one transformer layer followed by a 2-layer convolutional decoder beat a stack of 6 convolutions (0.954 against 0.932), because attention propagates information across the whole image.
+    \item Removing the head branch barely changed the result with the transformer decoder (0.953 against 0.954), while with the convolutional decoder it dropped from 0.932 to 0.916. The head pose is already in the DINOv2 tokens, but a transformer is needed to extract it.
+\end{itemize}
 
-\section{Conclusions}
+\vspace{0.5cm}
 
-Gaze-LLE demonstrates that complex multi-branch architectures are unnecessary for gaze estimation. A frozen foundation encoder with a well-designed lightweight decoder achieves SOTA with high parameter efficiency and excellent generalization. Future directions include video extension with spatio-temporal attention, adversarial robustness investigation, and multimodal integration.
+\subsection*{Results}
+
+The Gaze-LLE paper confirmed its hypothesis. Using only the RGB image, without depth or pose models, it reached an AUC of 0.958 on GazeFollow with the ViT-L backbone (0.956 with ViT-B), against 0.944 for the best previous method, and the lowest L2 errors on GazeFollow and VideoAttentionTarget.
+On the in/out of frame prediction of VideoAttentionTarget it was second best, but it obtained the best results when all the metrics are considered together. The model reached these results after less than 1.5 hours of training on a single RTX 4090, and inference runs at more than 50 fps on the same GPU.
+It also transferred well to VideoAttentionTarget, ChildPlay and GOO-Real without finetuning, which suggests that it does not overfit to the dataset it was trained on.
+
+\vspace{0.5cm}
+
+The output heatmaps also make the predictions easy to inspect. When the model is run without a head prompt, the performance drops, but it still predicts a valid gaze target for at least one person, and in scenes with only one person the head box is not needed at all.
+This shows that the DINOv2 features implicitly detect heads, and that the prompt mainly tells the model which person to follow when there are several people in the scene.
+
+\vspace{0.5cm}
+
+\subsection*{Future work}
+
+The paper points out two limitations: the performance is tied to the quality of the frozen encoder, which has to be trained on a large and diverse dataset with a dense objective, and such a large encoder may be a problem on embedded systems.
+Since the decoder only needs the encoder's features, stronger and faster encoders can be plugged in as they appear. The authors also show that the head position can be given as an extra token instead of an added embedding, which could let heavier decoders predict the gaze of several people at the same time.
+Other directions that could be explored are extending the model to video with spatio-temporal attention, testing its robustness to adversarial examples and combining it with other modalities. The applications mentioned in the paper include the analysis of social behavior, for example in the assessment of conditions like autism.
 
 \end{document}
