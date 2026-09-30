@@ -1,0 +1,63 @@
+[project]
+name = "template-project"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "pytest==8.3.4",
+    "pytest-cov==6.0.0",
+    "black==24.10.0",
+    "ruff==0.8.4",
+    "pylint==3.3.2",
+    "flake8==7.1.1",
+    "flake8-pyproject>=1.2.3",
+    "mypy==1.13.0",
+    "complexipy==1.2.0",
+    "isort==5.13.2",
+    "ipykernel>=6.29.5",
+    "polars>=1.31.0",
+    "pillow>=11.3.0",
+    "torch>=2.7.1",
+    "numpy>=2.3.1",
+    "matplotlib>=3.10.3",
+    "tqdm>=4.67.1",
+    "torchvision>=0.22.1",
+    "torchmetrics[detection]>=1.7.4",
+    "pycocotools>=2.0.10",
+    "faster-coco-eval>=1.6.7",
+]
+
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+
+[tool.mypy]
+ignore_missing_imports = true
+
+[tool.flake8]
+max-line-length = 88
+ignore = ["E731", "E203", "W503"]
+
+[tool.pylint."MESSAGES CONTROL"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+markers = [
+    "run: mark the order of the test."
+]
+addopts = "--cov src"
+
+[tool.coverage.run]
+omit = ["src/main.py"]
+
+# Pythorch cpu
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[tool.uv.sources]
+torch = { index = "pytorch-cpu" }
+torchvision = { index = "pytorch-cpu" }
