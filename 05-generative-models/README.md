@@ -25,5 +25,6 @@ A Vector Quantised VAE on CIFAR-10 following van den Oord et al.
 - `src/ema_update.py`, `src/loss.py`: the EMA update and the loss terms, with the reconstruction error normalised by the data variance.
 - `src/config.py`, `src/train.py`, `src/training.py`: settings (512 embeddings of dimension 64, commitment cost 0.25, decay 0.99, 15000 updates, batch size 256, learning rate 1e-3, mixed precision) and the training loop.
 - `src/checkpoint_utils.py`, `src/utils.py`: loading checkpoints, reconstructions, codebook sampling and plots.
+- Result: `checkpoint_reconstructions.png` shows 16 CIFAR-10 test images and their reconstructions after loading the course's template checkpoint into this implementation. Its title reports a VQ loss of 0.029 and a perplexity of 301.8.
 
 The template checkpoint, the sample images supplied by the course, the test suite and the data are not included. CIFAR-10 is downloaded by torchvision.
