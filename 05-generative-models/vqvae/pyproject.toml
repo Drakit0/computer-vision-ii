@@ -1,0 +1,73 @@
+[project]
+name = "vqvae"
+version = "0.1.0"
+description = "Lab 5 - Session II"
+requires-python = ">=3.11"
+dependencies = [
+    "numpy>=1.21.0",
+    "matplotlib>=3.5.0",
+    "tqdm>=4.64.0",
+    "torch>=2.8.0",
+    "torchvision==0.23.0",
+]
+
+[dependency-groups]
+lint = [
+    "black>=25.11.0",
+    "flake8>=7.3.0",
+    "isort>=7.0.0",
+    "mypy>=1.18.2",
+    "pylint>=4.0.3",
+]
+test = [
+    "pytest>=8.0.0",
+    "pytest-order>=1.2.0",
+    "pytest-cov>=4.0.0",
+]
+
+
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["src*"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["test"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "--ignore=src/"
+
+[tool.coverage.run]
+omit = [
+    "src/utils.py",
+    "src/checkpoint_utils.py"
+]
+
+[tool.mypy]
+ignore_missing_imports = true
+
+[tool.flake8]
+max-line-length = 88
+ignore = ["E731", "E203", "W503"]
+
+[tool.pylint.messages_control]
+disable = ["R0913", "R0917"]
+
+# Download torch without CUDA [Default]
+
+[tool.uv.sources]
+torch = [
+  { index = "pytorch-cpu" },
+]
+torchvision = [
+  { index = "pytorch-cpu" },
+]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
