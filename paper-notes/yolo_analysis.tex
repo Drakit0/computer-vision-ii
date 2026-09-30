@@ -1,0 +1,79 @@
+\documentclass[12pt]{article}
+
+% Use Times New Roman font
+\usepackage{mathptmx}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+
+\usepackage{geometry}
+\geometry{a4paper, margin=1in}
+
+\usepackage{setspace}
+\onehalfspacing
+
+\title{\vspace{-3cm}\textbf{YOLO Analysis - Pablo Tuñón Laguna}\vspace{-2cm}}
+
+
+\begin{document}
+\date{}
+
+\maketitle
+
+\subsection*{Summary of the paper}
+
+On June 2016, a team of researchers led by Joseph Redmon published \textit{"You Only Look Once: Unified, Real-Time Object Detection"}. This paper presented an architecture for object detection 
+based on understanding how a single neural network can solve the entire detection problem with better speed than traditional multi-stage approaches.
+
+\vspace{0.5cm}
+
+The architecture that received the \textit{"YOLO"} name, was designed to develop a unified structure that could enable real-time applications 
+while maintaining reasonable accuracy. The main idea is to divide the image into a grid and make each grid cell responsible for detecting objects:
+\begin{itemize}
+    \item Instead of first finding regions and then classifying them (like R-CNN variants), YOLO treats detection as a single regression problem.
+    \item Each grid cell predicts bounding boxes and class probabilities simultaneously, enabling the system to see the entire image.
+\end{itemize}
+
+\vspace{0.5cm}
+
+The final architecture consisted of a single CNN that simultaneously predicts multiple bounding boxes and class probabilities. The base YOLO achieved 45 fps on GPU, with Fast YOLO reaching 155 fps, compared to previous methods at less than 1 fps.
+
+\vspace{0.5cm}
+
+\subsection*{Scientific gap}
+
+Before the \textit{"YOLO"} architecture, object detection systems were extremely slow and computationally expensive, this model did not try to improve 
+the accuracy but to solve the fundamental speed problem. While previous methods like Faster R-CNN achieved higher accuracy, they operated at less than 1 fps, making them impractical for real-time applications. 
+YOLO introduced treating object detection as a single regression problem, eliminating region proposal networks.
+
+\vspace{0.5cm}
+
+\subsection*{Methodology}
+
+The YOLO paper methodology was based on reframing object detection as a single regression problem. The main hypothesis 
+was that a single neural network could predict bounding boxes and class probabilities directly from full images. There are several key methodological 
+innovations that were implemented:
+\begin{itemize}
+    \item The system divides the input image into an S×S grid (7×7), where each grid cell predicts objects whose center falls within that cell.
+    \item Each cell predicts B bounding boxes (B=2) along with confidence scores and C conditional class probabilities.
+    \item The confidence score reflects both object probability and bounding box accuracy.
+    \item The loss function design was crucial as it had to balance localization error, confidence prediction, and classification error in a single unified objective.
+This is related with unified learning as it builds on how localization and classification can be learned jointly.
+Therefore through this approach, the network learns to suppress background detections and focus on actual objects.
+\end{itemize}
+
+\vspace{0.5cm}
+
+It is also relevant to mark how the loss function was carefully designed to address the imbalanced nature of object detection, where most grid cells contain no objects. 
+The authors used different weighting schemes: higher weight for coordinate predictions (\(\lambda_{coord} = 5\)) and lower weight for confidence predictions of boxes that don't contain objects (\(\lambda_{noobj} = 0.5\)). 
+This design was critical because without proper weighting, the network would be dominated by cells that don't contain objects, making it difficult to learn proper object detection.
+
+\vspace{0.5cm}
+
+\subsection*{Results}
+
+The YOLO paper confirmed their hypothesis that real-time detection was feasible without catastrophic accuracy loss. The authors evaluated on PASCAL VOC 2007, using mAP and fps measurements. 
+YOLO achieved 63.4\% mAP compared to Faster R-CNN's 73\% mAP, but the speed difference was remarkable: 45 fps versus less than 1 fps. 
+It is also relevant to mark that YOLO made fewer background false positives compared to region-based methods. However, results showed YOLO struggled 
+with small objects and precise localization due to grid-based spatial constraints.
+
+\end{document}

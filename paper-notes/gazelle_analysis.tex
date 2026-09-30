@@ -1,0 +1,68 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+\usepackage{amsmath,amssymb}
+\usepackage{hyperref}
+\usepackage{geometry}
+\geometry{margin=2.5cm}
+
+\title{Analysis of \textit{Gaze-LLE: Gaze Target Estimation via Large-Scale Learned Encoders}}
+\author{Pablo Tuñón Laguna}
+\date{}
+
+\begin{document}
+
+\maketitle
+
+\section*{Overview}
+
+The paper \textit{Gaze-LLE} addresses gaze target estimation: predicting where a person is looking given an RGB frame and face bounding box. The key contribution demonstrates that a frozen general-purpose visual encoder (DINOv2 ViT) contains sufficient scene, pose, and depth information to solve the task using only a lightweight decoder. With $\sim$2.8M trainable parameters, the model achieves state-of-the-art on GazeFollow, VideoAttentionTarget, ChildPlay, and GOO-Real benchmarks.
+
+\section{Scientific Gap and Hypothesis}
+
+Previous gaze target methods used multi-branch architectures with separate encoders for head and scene, plus auxiliary models for depth and pose. These systems required tens of millions of parameters and careful fusion of heterogeneous representations. This work demonstrates that self-supervised foundation models can achieve SOTA without massive finetuning or complex multi-branch designs.
+
+The central hypothesis: large-scale self-supervised encoders (DINOv2) already encode sufficient semantic and geometric information, requiring only a lightweight learned decoder.
+
+\section{Methodology}
+
+The architecture processes frame $x_{\text{img}}$ and head bounding box $x_{\text{bbox}}$ through:
+
+\begin{enumerate}
+    \item \textbf{Frozen encoder.} DINOv2 ViT extracts features $x_{\mathcal{F}} \in \mathbb{R}^{d_{\text{model}} \times H \times W}$.
+    \item \textbf{Head prompting.} A learned embedding $p_{\text{head}}$ is added to tokens within the head box: $S = x_{\mathcal{F}} + (M \cdot p_{\text{head}})$.
+    \item \textbf{Gaze decoder.} Three transformer layers process tokens with global self-attention.
+    \item \textbf{Output.} Convolutions upsample to produce a gaze heatmap; an MLP classifies in/out-of-frame targets.
+\end{enumerate}
+
+Training uses binary cross-entropy on target heatmaps (2D Gaussians) and, when applicable, classification loss for in/out-of-frame prediction. Only the decoder and prompt are trained.
+
+\section{Key Design Decisions}
+
+The work analyzes three critical axes:
+\begin{enumerate}
+    \item Injecting head prompts \emph{after} the encoder preserves pretrained features better than finetuning.
+    \item Transformer decoders capture long-range relationships, significantly outperforming conv-only designs.
+    \item A dedicated head branch is unnecessary—pose information is implicit in DINOv2 tokens.
+\end{enumerate}
+
+\section{Advances}
+
+\textbf{Conceptual:} Positions gaze estimation within the foundation models paradigm, shifting focus from multi-branch fusion to proper adaptation of generic representations.
+
+\textbf{Methodological:} Introduces a generic gaze decoder compatible with various pretrained ViTs, head prompting mechanism, and systematic ablation protocol.
+
+\textbf{Computational:} Reduces trainable parameters from 30-100M to 2.8M, enables training in $<$1.5 hours on RTX 4090, and achieves $>$50 fps inference.
+
+\textbf{Empirical:} Achieves SOTA on all benchmarks (AUC $\approx 0.958$ on GazeFollow) using only RGB, without explicit depth or pose. Strong cross-dataset generalization demonstrates minimal over-specialization.
+
+\section{Explainability}
+
+The model provides interpretable gaze heatmaps for error analysis. Ablations without head prompts show DINOv2 encodes implicit head detections, with prompts acting as disambiguation in multi-person scenes.
+
+\section{Conclusions}
+
+Gaze-LLE demonstrates that complex multi-branch architectures are unnecessary for gaze estimation. A frozen foundation encoder with a well-designed lightweight decoder achieves SOTA with high parameter efficiency and excellent generalization. Future directions include video extension with spatio-temporal attention, adversarial robustness investigation, and multimodal integration.
+
+\end{document}

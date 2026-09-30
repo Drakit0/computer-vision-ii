@@ -1,0 +1,106 @@
+\documentclass[12pt]{article}
+
+% Use Times New Roman font
+\usepackage{mathptmx}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+
+\usepackage{geometry}
+\geometry{a4paper, margin=1in}
+
+\usepackage{setspace}
+\onehalfspacing
+
+\title{\vspace{-3cm}\textbf{Inception Analysis - Pablo Tuñón Laguna}\vspace{-2cm}}
+
+
+\begin{document}
+\date{}
+
+\maketitle
+
+\subsection*{Summary of the paper}
+
+On September 2014, on the context of the contest of the ImageNet Large Scale Visual Recognition Challenge (ILSVRC), a team of Google researchers
+and two collaborators published a paper called \textit{"Going deeper with convolutions"}. This paper presented an architecture for convolutional neural
+netowrks (CNNs) based on an approach stated by Lin et al called \textit{"Network in Network"}, which consist on understanding how a sparse CNN can solve 
+a problem with the same or better accuracy than a dense CNN.
+
+\vspace{0.5cm}
+
+The architecture that received the \textit{"Inception"} name, was designed to develop a pseudo sparse structure that still could be dense enough to be 
+efficiently trained with the current hardware. The main idea of the architecture is to use several parallel convolutional layers with different
+filter sizes, however two approaches were tested:
+\begin{itemize}
+    \item The first approach consisted of performing the 3 convolutions over the same input as well as a max pooling layer and concatenating the 
+outputs of all the layers over the channels, however this was extremely computationally expensive as the number of channels increased greatly.
+    \item The second approach consisted of performing a dimensionality reduction before the convolutions using 1x1 convolutions, which allowed 
+to reduce the number of channels while still keeping the non-linearity of the network. This approach was much more efficient and allowed to
+increase the depth of the network while keeping the computational cost low.
+\end{itemize}
+
+\vspace{0.5cm}
+
+The final architecture consisted of stacking several \textit{"Inception"} modules that used the sparsity of the neurons to group them in ways where they looked
+only into some patterns already detected by previous layers. It is also relevant to mark the fact that many data augmentation methods were used to 
+not only test but create an extremely robust model (using more than the 1.2M provided training images). The final architecture was 22 layers deep (27 if we count the pooling layers) and was
+able to achieve a top-5 error rate of 6.67\% on the ILSVRC 2014, which was the best result at that time, beating by 0.6\% the previous state-of-the-art model.
+
+\vspace{0.5cm}
+
+\subsection*{Scientific gap}
+
+Before the \textit{"Inception"} structure, CNNs were extremely big and computationally expensive, this model did not try to improve 
+the accuracy of the classifications (even though it did), but to reduce the computational cost of training a model. For reference, 
+the winning model had approximately 12 times less parameters than the previous state-of-the-art model. They used an ensemble of 7 
+GoogLeNets as well as averaging the results of those models to improve the accuracy of the final model. Furthermore, it introduced
+the idea of using auxiliary classifiers to improve the training which were not used during the inference stage, helping with the vanishing gradient problem.
+
+\vspace{0.5cm}
+
+It is relevant to note that these improvements, although at first may seem quite specific ended up being quite general as not only it affected the deep 
+learning community, but also the computer vision community, as it allowed to use deeper and more optimized CNNs for more complex tasks.
+
+\vspace{0.5cm}
+
+\subsection*{Scientific coverage}
+
+The inception paper had a light empirical improvement over the previous state-of-the-art model however its main contribution of architecture and 
+training techniques had a big impact on the computational efficiency of the CNNs. There are several properties of the images and 
+convolutions that were used to create this efficient architecture:
+\begin{itemize}
+    \item Sparse connections are more efficient than dense connections, as not all the neurons need to be connected to all the neurons of the previous layer.
+    \item The use of 1x1 convolutions allows to reduce the number of channels while still keeping the non-linearity of the network.
+    \item The use of auxiliary classifiers helps to improve the training of the network by providing additional (weighted) gradients during the backpropagation.
+This has something to do with XAI as it builds on how after an analysis of the first layers of a CNN it was already capable of discriminating and sparsing features.
+Therefore through this auxiliary classifiers, the neural network has less problems with the vanishing gradient problem.
+    \item The use of ensemble models and averaging the results of several models helps to improve the accuracy of the final model.
+\end{itemize}
+
+\vspace{0.5cm}
+
+\subsection*{Inception for dummies}
+
+On neural networks you have a set of layers with trainable parameters that affect the output of the network. The operations to obtain the optimal weights for
+a desired output is called training, the more parameters the model has, the more time it takes to train it. Having a deep model is great as it allows to 
+learn more complex patterns, however it also increases the number of parameters, making it harder to train. 
+
+\vspace{0.5cm}
+
+The \textit{"Inception"} architecture operates over a type of neural networks called convolutional neural networks (CNNs), which were designed to work with images.
+The paper states that as having too many parameters is unfeasible, the solution is to focus on the most relevant parameters (or connection between neurons).
+On simple words, instead of looking at patches of the image and trying to learn all the patterns, you have some neurons that learn some patterns and then 
+deeper neurons taht only look at some of those patterns to learn more complex patterns. It is a big revolution as previous models had all the neurons looking 
+at all the patterns, which was unfeasible for deep models. 
+
+\vspace{0.5cm}
+
+\subsection*{Future work}
+
+Through all the paper, it was stated how one of the objectives of this architecture was to be computationally efficient so that it could be 
+used in mobile devices to solve real world problems. Furthermore they created some research lines that could be explored in the future such 
+as the data augmentation and ensemble methods used to train and the auxiliary classifiers used to improve the training of the network. Although 
+no real world applications were stated in the paper (other than 1000 classes classification) it is clear that 
+this architecture could be used on many industry CV and time series problems such as: times series classification or crack detection in Artworks.
+
+\end{document}
