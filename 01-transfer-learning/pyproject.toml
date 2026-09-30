@@ -1,0 +1,20 @@
+[project]
+name = "cv-lab-1-v2"
+version = "0.1.0"
+description = "Project 1: Transfer Learning"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "black>=25.1.0",
+    "flake8>=7.3.0",
+    "gdown>=5.2.0",
+    "h5py>=3.14.0",
+    "matplotlib>=3.10.6",
+    "mypy>=1.17.1",
+    "numpy>=2.3.2",
+    "pytest>=8.4.1",
+    "scikit-learn>=1.7.1",
+    "torch>=2.8.0",
+    "torchvision>=0.23.0",
+    "tqdm>=4.67.1",
+]
